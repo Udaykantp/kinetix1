@@ -1,0 +1,6 @@
+{
+  "name": "KINETIX Power - Premium Industrial & Automotive Batteries",
+  "description": "High-performance automotive, inverter, solar, and lithium-ion energy storage systems engineered for endurance and reliability.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

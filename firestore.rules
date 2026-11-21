@@ -1,0 +1,397 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 0: Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Global Hardened Primitives ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'udaykantp9199@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerifiedUser() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Validation Blueprints (Anti-Update-Gap) ---
+    function isValidWishlistArray(arr) {
+      return arr is list && arr.size() <= 50 && (arr.size() == 0 || (arr[0] is string && arr[0].size() <= 128));
+    }
+
+    function isValidHelpfulUserIds(arr) {
+      return arr is list && arr.size() <= 50 && (arr.size() == 0 || (arr[0] is string && arr[0].size() >= 1 && arr[0].size() <= 128));
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'phone', 'gender', 'role', 'wishlistIds', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'name', 'email', 'phone', 'gender', 'role', 'wishlistIds', 'createdAt', 'updatedAt']) &&
+        isValidId(data.uid) &&
+        data.uid == userId &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 200 &&
+        data.phone is string && data.phone.size() <= 30 &&
+        data.gender is string && data.gender in ['', 'Male', 'Female', 'Other'] &&
+        data.role is string && data.role in ['customer', 'admin'] &&
+        isValidWishlistArray(data.wishlistIds) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAddress(data, userId, addressId) {
+      return data.keys().hasAll([
+          'id', 'userId', 'label', 'fullName', 'phone', 'email',
+          'addressLine1', 'addressLine2', 'city', 'state', 'pinCode',
+          'isDefault', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'userId', 'label', 'fullName', 'phone', 'email',
+          'addressLine1', 'addressLine2', 'city', 'state', 'pinCode',
+          'isDefault', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == addressId &&
+        isValidId(data.userId) &&
+        data.userId == userId &&
+        data.label is string && data.label in ['Home', 'Work', 'Other'] &&
+        data.fullName is string && data.fullName.size() >= 1 && data.fullName.size() <= 100 &&
+        data.phone is string && data.phone.size() >= 6 && data.phone.size() <= 30 &&
+        data.email is string && data.email.size() <= 200 &&
+        data.addressLine1 is string && data.addressLine1.size() >= 3 && data.addressLine1.size() <= 250 &&
+        data.addressLine2 is string && data.addressLine2.size() <= 200 &&
+        data.city is string && data.city.size() >= 1 && data.city.size() <= 80 &&
+        data.state is string && data.state.size() >= 1 && data.state.size() <= 80 &&
+        data.pinCode is string && data.pinCode.size() >= 4 && data.pinCode.size() <= 12 &&
+        data.isDefault is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidShippingAddressMap(addr) {
+      return addr is map &&
+        addr.keys().hasAll(['fullName', 'phone', 'email', 'addressLine1', 'city', 'state', 'pinCode']) &&
+        addr.keys().hasOnly(['id', 'label', 'fullName', 'phone', 'email', 'addressLine1', 'addressLine2', 'city', 'state', 'pinCode', 'isDefault']) &&
+        (!('id' in addr) || isValidId(addr.id)) &&
+        (!('label' in addr) || (addr.label is string && addr.label in ['Home', 'Work', 'Other'])) &&
+        (!('addressLine2' in addr) || (addr.addressLine2 is string && addr.addressLine2.size() <= 200)) &&
+        (!('isDefault' in addr) || addr.isDefault is bool) &&
+        addr.fullName is string && addr.fullName.size() >= 1 && addr.fullName.size() <= 100 &&
+        addr.phone is string && addr.phone.size() >= 6 && addr.phone.size() <= 30 &&
+        addr.email is string && addr.email.size() <= 200 &&
+        addr.addressLine1 is string && addr.addressLine1.size() >= 3 && addr.addressLine1.size() <= 250 &&
+        addr.city is string && addr.city.size() >= 1 && addr.city.size() <= 80 &&
+        addr.state is string && addr.state.size() >= 1 && addr.state.size() <= 80 &&
+        addr.pinCode is string && addr.pinCode.size() >= 4 && addr.pinCode.size() <= 12;
+    }
+
+    function isValidOrderItems(items) {
+      return items is list &&
+        items.size() >= 1 &&
+        items.size() <= 20 &&
+        items[0] is map;
+    }
+
+    function isValidStatusHistory(history) {
+      return history is list &&
+        history.size() >= 1 &&
+        history.size() <= 20 &&
+        history[0] is map;
+    }
+
+    function isValidOrder(data, orderId) {
+      return data.keys().hasAll([
+          'id', 'userId', 'date', 'items', 'subtotal', 'tax', 'discount',
+          'shipping', 'total', 'status', 'paymentMethod', 'paymentStatus',
+          'shippingAddress', 'trackingNumber', 'carrier', 'estimatedDelivery',
+          'statusHistory', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'userId', 'date', 'items', 'subtotal', 'tax', 'discount',
+          'shipping', 'total', 'status', 'paymentMethod', 'paymentStatus',
+          'shippingAddress', 'trackingNumber', 'carrier', 'estimatedDelivery',
+          'statusHistory', 'returnReason', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == orderId &&
+        data.id.size() <= 64 &&
+        isValidId(data.userId) &&
+        data.date is string && data.date.size() >= 10 && data.date.size() <= 40 &&
+        isValidOrderItems(data.items) &&
+        data.subtotal is number && data.subtotal >= 0 &&
+        data.tax is number && data.tax >= 0 &&
+        data.discount is number && data.discount >= 0 &&
+        data.shipping is number && data.shipping >= 0 &&
+        data.total is number && data.total >= 0 &&
+        data.status is string && data.status in [
+          'Order Placed', 'Processing', 'Quality Testing', 'Dispatched',
+          'Out for Delivery', 'Delivered', 'Cancelled', 'Return Requested'
+        ] &&
+        data.paymentMethod is string && data.paymentMethod in ['UPI', 'Card', 'Net Banking', 'Cash on Delivery'] &&
+        data.paymentStatus is string && data.paymentStatus in ['Paid', 'Pending COD', 'Refunded'] &&
+        isValidShippingAddressMap(data.shippingAddress) &&
+        data.trackingNumber is string && data.trackingNumber.size() <= 100 &&
+        data.carrier is string && data.carrier.size() <= 100 &&
+        data.estimatedDelivery is string && data.estimatedDelivery.size() <= 80 &&
+        isValidStatusHistory(data.statusHistory) &&
+        (!('returnReason' in data) || (data.returnReason is string && data.returnReason.size() <= 500)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidReview(data, reviewId) {
+      return data.keys().hasAll([
+          'id', 'productId', 'userId', 'authorName', 'rating', 'title',
+          'comment', 'vehicleOrApplication', 'configuredVariant',
+          'verifiedPurchase', 'helpfulUserIds', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'productId', 'userId', 'authorName', 'rating', 'title',
+          'comment', 'vehicleOrApplication', 'configuredVariant',
+          'verifiedPurchase', 'helpfulUserIds', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == reviewId &&
+        isValidId(data.productId) &&
+        isValidId(data.userId) &&
+        data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 80 &&
+        data.rating is int && data.rating >= 1 && data.rating <= 5 &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 120 &&
+        data.comment is string && data.comment.size() >= 10 && data.comment.size() <= 1500 &&
+        data.vehicleOrApplication is string && data.vehicleOrApplication.size() <= 120 &&
+        data.configuredVariant is string && data.configuredVariant.size() <= 120 &&
+        data.verifiedPurchase is bool &&
+        isValidHelpfulUserIds(data.helpfulUserIds) &&
+        data.status is string && data.status in ['published', 'hidden'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isSelfHelpfulVoteToggle() {
+      return (
+        incoming().helpfulUserIds.size() == existing().helpfulUserIds.size() + 1 &&
+        incoming().helpfulUserIds.hasAll(existing().helpfulUserIds) &&
+        request.auth.uid in incoming().helpfulUserIds &&
+        !(request.auth.uid in existing().helpfulUserIds)
+      ) || (
+        existing().helpfulUserIds.size() == incoming().helpfulUserIds.size() + 1 &&
+        existing().helpfulUserIds.hasAll(incoming().helpfulUserIds) &&
+        request.auth.uid in existing().helpfulUserIds &&
+        !(request.auth.uid in incoming().helpfulUserIds)
+      );
+    }
+
+    // --- Collection: users (PII Strictly Isolated) ---
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isBootstrappedAdmin();
+
+      allow create: if isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().uid == request.auth.uid &&
+        incoming().email == request.auth.token.email &&
+        incoming().role == 'customer' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isValidId(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'gender', 'role', 'wishlistIds', 'updatedAt'])) ||
+          (
+            isOwner(userId) &&
+            incoming().role == existing().role &&
+            incoming().email == existing().email && (
+              // Action: Update personal profile info
+              incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'gender', 'updatedAt']) ||
+              // Action: Sync wishlist
+              incoming().diff(existing()).affectedKeys().hasOnly(['wishlistIds', 'updatedAt'])
+            )
+          )
+        );
+
+      allow delete: if false;
+
+      // --- Subcollection: users/{userId}/addresses/{addressId} ---
+      match /addresses/{addressId} {
+        allow get: if isValidId(userId) && isValidId(addressId) && (isOwner(userId) || isAdmin());
+        allow list: if isValidId(userId) && (isOwner(userId) || isBootstrappedAdmin());
+
+        allow create: if isValidId(userId) &&
+          isValidId(addressId) &&
+          isOwner(userId) &&
+          isValidAddress(incoming(), userId, addressId) &&
+          incoming().userId == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          exists(/databases/$(database)/documents/users/$(userId));
+
+        allow update: if isValidId(userId) &&
+          isValidId(addressId) &&
+          isValidAddress(incoming(), userId, addressId) &&
+          incoming().userId == existing().userId &&
+          incoming().id == existing().id &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          isOwner(userId) &&
+          exists(/databases/$(database)/documents/users/$(userId)) && (
+            // Action: Edit address details
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'label', 'fullName', 'phone', 'email',
+              'addressLine1', 'addressLine2', 'city', 'state', 'pinCode',
+              'isDefault', 'updatedAt'
+            ]) ||
+            // Action: Toggle default address flag
+            incoming().diff(existing()).affectedKeys().hasOnly(['isDefault', 'updatedAt'])
+          );
+
+        allow delete: if isValidId(userId) &&
+          isValidId(addressId) &&
+          isOwner(userId) &&
+          exists(/databases/$(database)/documents/users/$(userId));
+      }
+    }
+
+    // --- Collection: orders ---
+    match /orders/{orderId} {
+      allow get: if isValidId(orderId) && isVerifiedUser() && (
+        existing().userId == request.auth.uid || isAdmin()
+      );
+
+      // Pillar 8: Secure List Queries (No get()/exists() inside list; evaluates resource.data)
+      allow list: if isVerifiedUser() && (
+        existing().userId == request.auth.uid || isBootstrappedAdmin()
+      );
+
+      allow create: if isValidId(orderId) &&
+        isVerifiedUser() &&
+        isValidOrder(incoming(), orderId) &&
+        incoming().userId == request.auth.uid &&
+        incoming().status == 'Order Placed' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isValidId(orderId) &&
+        isValidOrder(incoming(), orderId) &&
+        incoming().id == existing().id &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          // Tier 1: Admin status / delivery management override
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'statusHistory', 'paymentStatus', 'trackingNumber', 'updatedAt'])) ||
+          // Tier 2: Customer Cancel Order (only before dispatch; terminal states locked)
+          (
+            isVerifiedUser() &&
+            existing().userId == request.auth.uid &&
+            existing().status in ['Order Placed', 'Processing', 'Quality Testing'] &&
+            incoming().status == 'Cancelled' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'statusHistory', 'updatedAt'])
+          ) ||
+          // Tier 2: Customer Request Return on Delivered Order
+          (
+            isVerifiedUser() &&
+            existing().userId == request.auth.uid &&
+            existing().status == 'Delivered' &&
+            incoming().status == 'Return Requested' &&
+            'returnReason' in incoming() &&
+            incoming().returnReason.size() >= 3 &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'statusHistory', 'returnReason', 'updatedAt'])
+          )
+        );
+
+      allow delete: if false;
+    }
+
+    // --- Collection: reviews (Public Published Product Feedback, Zero PII) ---
+    match /reviews/{reviewId} {
+      allow get: if isValidId(reviewId) && (
+        existing().status == 'published' ||
+        (isVerifiedUser() && (existing().userId == request.auth.uid || isAdmin()))
+      );
+
+      // Pillar 8: Secure List Queries (No get()/exists(); enforces published visibility or ownership)
+      allow list: if existing().status == 'published' ||
+        (isVerifiedUser() && (existing().userId == request.auth.uid || isBootstrappedAdmin()));
+
+      allow create: if isValidId(reviewId) &&
+        isVerifiedUser() &&
+        isValidReview(incoming(), reviewId) &&
+        incoming().userId == request.auth.uid &&
+        incoming().status == 'published' &&
+        incoming().helpfulUserIds.size() == 0 &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+
+      allow update: if isValidId(reviewId) &&
+        isValidReview(incoming(), reviewId) &&
+        incoming().id == existing().id &&
+        incoming().productId == existing().productId &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          // Tier 1: Admin moderation override (publish / hide review)
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])) ||
+          // Tier 2: Review author editing their own feedback
+          (
+            isVerifiedUser() &&
+            existing().userId == request.auth.uid &&
+            incoming().status == existing().status &&
+            incoming().verifiedPurchase == existing().verifiedPurchase &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'authorName', 'rating', 'title', 'comment', 'vehicleOrApplication', 'updatedAt'
+            ])
+          ) ||
+          // Tier 2: Verified user toggling their own helpful vote (strict +-1 diff)
+          (
+            isVerifiedUser() &&
+            existing().status == 'published' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['helpfulUserIds', 'updatedAt']) &&
+            isSelfHelpfulVoteToggle()
+          )
+        );
+
+      allow delete: if isValidId(reviewId) &&
+        isVerifiedUser() && (
+          existing().userId == request.auth.uid || isAdmin()
+        );
+    }
+
+    // --- Collection: admins (Server-managed role table) ---
+    match /admins/{adminId} {
+      allow get: if isValidId(adminId) && isOwner(adminId);
+      allow list, create, update, delete: if false;
+    }
+  }
+}

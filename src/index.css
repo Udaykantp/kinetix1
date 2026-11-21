@@ -1,0 +1,354 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-graphite-950: #0F1012;
+  --color-graphite-900: #17191C;
+  --color-graphite-800: #25282D;
+  --color-graphite-700: #343940;
+  --color-graphite-600: #4B525C;
+  
+  --color-titanium-50: #F7F8F9;
+  --color-titanium-100: #ECEEF0;
+  --color-titanium-200: #D8DBDF;
+  --color-titanium-300: #B7BCC2;
+  --color-titanium-400: #8E959E;
+  --color-titanium-500: #6B727D;
+
+  --color-champagne-light: #F4EAD9;
+  --color-champagne: #D6B98C;
+  --color-champagne-dark: #B59562;
+  --color-champagne-hover: #E3CDA7;
+
+  --color-copper-light: #C9906E;
+  --color-copper: #A87555;
+  --color-copper-dark: #7F5338;
+
+  --color-ivory-50: #FAF9F6;
+  --color-ivory: #F2F0EA;
+  --color-ivory-dark: #E4E0D5;
+
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+body {
+  background-color: #FFFFFF;
+  color: #121417;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Hide scrollbar for clean horizontal swipe on mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom scrollbar for light industrial aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F8F9FA;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
+
+/* Metallic gradient utility */
+.metallic-surface {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.champagne-glow {
+  box-shadow: 0 4px 20px rgba(214, 185, 140, 0.25);
+}
+
+.copper-border {
+  border-color: rgba(168, 117, 85, 0.4);
+}
+
+/* ==========================================================================
+   WHITE THEME ADAPTATION
+   Transforms all dark graphite surfaces into crisp white & light ivory,
+   with dark graphite typography and hairline borders.
+   ========================================================================== */
+
+.bg-\[\#17191C\],
+.bg-\[\#17191c\] {
+  background-color: #FFFFFF !important;
+}
+
+.bg-\[\#101214\],
+.bg-\[\#101214\] {
+  background-color: #F8F9FA !important;
+}
+
+.bg-\[\#0F1012\],
+.bg-\[\#0f1012\] {
+  background-color: #FFFFFF !important;
+}
+
+.bg-\[\#25282D\],
+.bg-\[\#25282d\] {
+  background-color: #F3F4F6 !important;
+}
+
+.bg-\[\#17191C\]\/95,
+.bg-\[\#17191C\]\/90,
+.bg-\[\#17191C\]\/80,
+.bg-\[\#101214\]\/95,
+.bg-\[\#101214\]\/90,
+.bg-\[\#101214\]\/80 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.bg-\[\#25282D\]\/80,
+.bg-\[\#25282d\]\/80 {
+  background-color: rgba(243, 244, 246, 0.95) !important;
+}
+
+/* High contrast typography for white backgrounds */
+.text-\[\#F2F0EA\],
+.text-\[\#f2f0ea\] {
+  color: #121417 !important;
+}
+
+.text-\[\#B7BCC2\],
+.text-\[\#b7bcc2\] {
+  color: #4B525C !important;
+}
+
+.text-\[\#8E959E\],
+.text-\[\#8e959e\] {
+  color: #6B7280 !important;
+}
+
+/* Crisp hairline borders */
+.border-\[\#25282D\],
+.border-\[\#25282d\] {
+  border-color: #E5E7EB !important;
+}
+
+.border-\[\#343940\],
+.border-\[\#343940\] {
+  border-color: #E2E4E8 !important;
+}
+
+/* Hover background states */
+.hover\:bg-\[\#25282D\]:hover,
+.hover\:bg-\[\#25282d\]:hover {
+  background-color: #F3F4F6 !important;
+}
+
+.hover\:bg-\[\#343940\]:hover,
+.hover\:bg-\[\#343940\]:hover {
+  background-color: #E5E7EB !important;
+}
+
+.hover\:text-\[\#F2F0EA\]:hover,
+.hover\:text-\[\#f2f0ea\]:hover {
+  color: #121417 !important;
+}
+
+/* Gradients that were from dark to dark: make them soft white to light gray */
+.from-\[\#25282D\] {
+  --tw-gradient-from: #F3F4F6 var(--tw-gradient-from-position) !important;
+}
+.to-\[\#17191C\] {
+  --tw-gradient-to: #FFFFFF var(--tw-gradient-to-position) !important;
+}
+
+/* Form inputs & controls */
+input, select, textarea {
+  color: #121417;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #9CA3AF;
+}
+
+/* ==========================================================================
+   HIGH-CRAFT ALPINE ARCHITECTURAL PDP THEME SYSTEM
+   Light default (Cold Alpine Mineral & Pine Sage) + Dark toggle (Alpine Basalt)
+   Scoped to .pdp-root so it never collides with global storefront styles.
+   ========================================================================== */
+.pdp-root {
+  --pdp-font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --pdp-font-mono: 'DM Mono', monospace;
+  --pdp-radius-card: 12px;
+  --pdp-radius-pill: 999px;
+  font-family: var(--pdp-font-sans);
+  background-color: var(--pdp-bg);
+  color: var(--pdp-text);
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+.pdp-root[data-theme="light"] {
+  --pdp-bg: #f3f6f4;
+  --pdp-surface: #e8eeea;
+  --pdp-surface-2: #dde5e0;
+  --pdp-text: #111614;
+  --pdp-text-muted: #48544e;
+  --pdp-accent: #3d5740;
+  --pdp-accent-hover: #314734;
+  --pdp-accent-fg: #f3f6f4;
+  --pdp-glass: rgba(243, 246, 244, 0.72);
+  --pdp-glass-strong: rgba(243, 246, 244, 0.88);
+  --pdp-border: rgba(17, 22, 20, 0.1);
+  --pdp-border-strong: rgba(17, 22, 20, 0.18);
+  --pdp-plinth: radial-gradient(circle at 50% 62%, rgba(61, 87, 64, 0.22) 0%, rgba(232, 238, 234, 0) 68%);
+  --pdp-shadow-float: 0 28px 60px -18px rgba(17, 22, 20, 0.24);
+  --pdp-grain-opacity: 0.032;
+}
+
+.pdp-root[data-theme="dark"] {
+  --pdp-bg: #0c100e;
+  --pdp-surface: #141a17;
+  --pdp-surface-2: #1b221e;
+  --pdp-text: #eff3f1;
+  --pdp-text-muted: #98a49e;
+  --pdp-accent: #48634b;
+  --pdp-accent-hover: #56765a;
+  --pdp-accent-fg: #eff3f1;
+  --pdp-glass: rgba(12, 16, 14, 0.72);
+  --pdp-glass-strong: rgba(20, 26, 23, 0.88);
+  --pdp-border: rgba(239, 243, 241, 0.11);
+  --pdp-border-strong: rgba(239, 243, 241, 0.22);
+  --pdp-plinth: radial-gradient(circle at 50% 62%, rgba(72, 99, 75, 0.34) 0%, rgba(20, 26, 23, 0) 70%);
+  --pdp-shadow-float: 0 34px 72px -18px rgba(0, 0, 0, 0.65);
+  --pdp-grain-opacity: 0.045;
+}
+
+.pdp-root input,
+.pdp-root select,
+.pdp-root textarea {
+  color: var(--pdp-text);
+}
+
+.pdp-root input::placeholder,
+.pdp-root textarea::placeholder {
+  color: var(--pdp-text-muted);
+  opacity: 0.7;
+}
+
+.pdp-mono {
+  font-family: var(--pdp-font-mono);
+}
+
+.pdp-heading {
+  font-family: var(--pdp-font-sans);
+  letter-spacing: -0.038em;
+}
+
+.pdp-glass-bar {
+  background: var(--pdp-glass);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--pdp-border);
+}
+
+.pdp-glass-pill {
+  background: var(--pdp-glass-strong);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--pdp-border);
+  border-radius: 999px;
+}
+
+.pdp-btn {
+  border-radius: 999px;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.22s ease, border-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.pdp-btn:active {
+  transform: scale(0.97);
+}
+
+/* Subtle fixed film-grain overlay */
+.pdp-film-grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 45;
+  opacity: var(--pdp-grain-opacity, 0.035);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px 180px;
+}
+
+/* KINETIX Hero Gold Gradient Text */
+.kinetix-gold-text {
+  background: linear-gradient(135deg, #B5812B 0%, #D9AE6D 48%, #9E6A1C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Custom Warm Gold Range Slider for Technical Filters */
+.kinetix-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+}
+
+.kinetix-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #D6A546;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 1px 4px rgba(16, 24, 32, 0.28);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.kinetix-range::-webkit-slider-thumb:hover {
+  background: #C49335;
+  transform: scale(1.1);
+}
+
+.kinetix-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #D6A546;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 1px 4px rgba(16, 24, 32, 0.28);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
